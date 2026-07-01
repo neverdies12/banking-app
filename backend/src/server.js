@@ -13,6 +13,7 @@ const app = express();
 app.use(cors({ origin: process.env.CORS_ORIGIN?.split(",") || "*" }));
 app.use(express.json());
 
+app.get("/", (req, res) => res.json({ ok: true, service: "banking-app-backend" }));
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 app.use("/api/accounts", accountsRouter);
 app.use("/api/transactions", transactionsRouter);
