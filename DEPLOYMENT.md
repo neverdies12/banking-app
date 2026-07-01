@@ -2,6 +2,17 @@
 
 Stack: Neon (Postgres) + Render (backend API) + Vercel (frontend).
 
+**Live URLs:**
+- Frontend: https://banking-app-woad-three.vercel.app
+- Backend: https://banking-app-1-shcy.onrender.com
+
+**Important — Render's Root Directory / Build Command / Start Command fields
+must be filled in explicitly.** Leaving them blank doesn't mean "use sensible
+defaults" — Render falls back to auto-detection that can silently pick the
+wrong command (it ran bare `yarn` at the repo root instead of `npm install`
+inside `backend/`, and left the start command unset). Confirm all three
+fields actually show a value before deploying, not just the placeholder text.
+
 ## 1. Database — Neon
 
 Already done for this project: a Neon project was created and its
@@ -59,6 +70,19 @@ Note: Render's free tier spins down after inactivity — the first request after
 Go back to the Render dashboard -> your backend service -> **Environment**,
 and update `CORS_ORIGIN` to your Vercel URL from step 4.5. Save — Render
 redeploys automatically.
+
+## Updating the seed data
+
+Re-running the seed script always resets the database to the original
+demo data (it drops and recreates all tables):
+
+```powershell
+cd C:\Users\Administrator\Documents\banking-app\backend
+npm run seed
+```
+
+This targets whatever `DATABASE_URL` is in `backend/.env` — since that's the
+same Neon database Render connects to, running it locally resets production.
 
 ## Future updates
 
