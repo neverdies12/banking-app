@@ -41,6 +41,7 @@ git push -u origin main
 4. Under **Environment**, add:
    - `DATABASE_URL` = your Neon connection string
    - `CORS_ORIGIN` = `http://localhost:5173` for now (update after step 4)
+   - `JWT_SECRET` = a long random string (same one used in `backend/.env`) — required for login to work
    - `PORT` is set automatically by Render — no need to add it.
 5. Click **Create Web Service**. Wait for the first deploy to finish, then copy the service URL (e.g. `https://banking-app-backend.onrender.com`).
 6. One-time only: run the seed script against production from your machine:
@@ -51,6 +52,8 @@ git push -u origin main
    (It uses the same `DATABASE_URL` already in your local `.env`, so it seeds the same Neon database Render connects to.)
 
 Note: Render's free tier spins down after inactivity — the first request after idling can take ~30s while it wakes up.
+
+**Demo login:** `alex@sable.bank` / `sable-demo` (created by the seed script). Change this before sharing the app publicly, since it's currently the only account and its password is in this repo's history.
 
 ## 4. Frontend — Vercel
 

@@ -35,6 +35,10 @@ Two independent Node projects with no shared code or monorepo tooling:
 
 **`budgets` and `trendData` in `BankingApp.jsx` are intentionally static.** There's no backend table for budgets or historical net-worth snapshots — only wire these to the API if that's explicitly in scope for the task at hand.
 
+**Auth is single-tenant, not multi-user.** There's one seeded demo account (`alex@sable.bank`); accounts/transactions/bills/etc. are global, not scoped by `user_id`. `middleware/auth.js` verifies a JWT (signed in `routes/auth.js` on login) and is mounted in `server.js` as `app.use("/api", requireAuth)` *after* `/api/auth` and `/api/health` are registered — that ordering is what keeps login and health checks public while gating everything else. If you add real multi-user support, accounts/transactions/bills/transfers/cards all need a `user_id` column and every query needs to filter by `req.user.sub`, which they currently don't.
+
+The frontend (`api.js`) stores the JWT and user object in `localStorage` (`sable_token` / `sable_user`) and attaches `Authorization: Bearer <token>` to every request. On any `401`, it fires a `sable:unauthorized` window event rather than throwing into the caller — `BankingApp`'s top-level component listens for that event to drop back to the login screen, so any new fetch call automatically gets this behavior for free via the shared `request()` helper.
+
 ## Deployment
 
 Neon (Postgres) + Render (backend) + Vercel (frontend); see `DEPLOYMENT.md` for the live URLs and full walkthrough. Render's Root Directory / Build Command / Start Command fields must be filled in explicitly — leaving them blank makes Render silently guess the wrong command instead of failing loudly.
