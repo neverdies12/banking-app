@@ -3,7 +3,7 @@ import {
   Home, Send, Receipt, PieChart as PieIcon, CreditCard, History as HistoryIcon,
   Bell, Settings as SettingsIcon, Snowflake, Eye, EyeOff, Search,
   ArrowDownLeft, ShoppingCart, Utensils, Car, ShoppingBag, Film,
-  ChevronRight, Check, ArrowLeftRight, Wallet, PiggyBank
+  ChevronRight, Check, ArrowLeftRight, Wallet, PiggyBank, LogOut
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip
@@ -74,6 +74,85 @@ const formatDate = (input) => {
     : new Date(input);
   return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(d);
 };
+
+const GLOBAL_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500..700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  .app-root { background: ${COLORS.ink}; color: ${COLORS.bone}; min-height: 100vh; }
+  .font-display { font-family: 'Fraunces', serif; }
+  .font-body { font-family: 'Inter', sans-serif; }
+  .font-mono { font-family: 'IBM Plex Mono', monospace; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: ${COLORS.gold}; }
+
+  .shell { max-width: 1100px; margin: 0 auto; padding: 20px 16px 100px; }
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom: 22px; }
+  .brand { font-family:'Fraunces',serif; font-size:22px; color:${COLORS.bone}; letter-spacing:0.5px; }
+  .icon-btn { width:38px; height:38px; border-radius:11px; background:${COLORS.ink2}; display:flex; align-items:center; justify-content:center; border:1px solid rgba(244,239,228,0.08); color:${COLORS.boneDim}; cursor:pointer; }
+  .icon-btn:hover { border-color: rgba(201,154,74,0.5); color:${COLORS.gold}; }
+
+  .ledger-hero { position:relative; padding: 22px 20px 20px; border-radius: 18px; background: linear-gradient(145deg, ${COLORS.ink2}, ${COLORS.ink3}); border:1px solid rgba(244,239,228,0.08); margin-bottom: 20px; }
+  .ledger-hero::before { content:''; position:absolute; top:0; left:16px; right:16px; height:6px; background-image: radial-gradient(circle at 6px 0px, ${COLORS.ink} 4px, transparent 4.2px); background-size:16px 6px; background-repeat:repeat-x; }
+  .ledger-amount-lg { font-size: 38px; font-weight:600; }
+  .ledger-amount-md { font-size: 22px; font-weight:600; }
+  .ledger-amount-sm { font-size: 15px; font-weight:600; }
+
+  .accounts-row { display:flex; gap:12px; overflow-x:auto; padding-bottom:4px; }
+  .account-card { min-width: 210px; text-align:left; background:${COLORS.ink2}; border-radius:16px; padding:18px; border:1.5px solid rgba(244,239,228,0.10); cursor:pointer; transition: border-color .2s ease, transform .2s ease; flex-shrink:0; }
+  .account-card:hover { transform: translateY(-2px); }
+
+  .stamp-icon { width:34px; height:34px; border-radius:10px; background:rgba(244,239,228,0.06); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .cat-stamp { border-radius: 50%; border: 1.5px dashed currentColor; display:flex; align-items:center; justify-content:center; transform: rotate(-4deg); flex-shrink:0; background: rgba(244,239,228,0.03); }
+
+  .quick-actions { display:flex; gap:10px; margin: 18px 0 26px; flex-wrap:wrap; }
+  .quick-action { display:flex; flex-direction:column; align-items:center; gap:6px; background:${COLORS.ink2}; border:1px solid rgba(244,239,228,0.08); border-radius:14px; padding:12px 18px; cursor:pointer; color:${COLORS.bone}; font-size:12px; }
+  .quick-action:hover { border-color: rgba(201,154,74,0.5); }
+  .quick-action svg { color: ${COLORS.gold}; }
+
+  .panel { background:${COLORS.ink2}; border:1px solid rgba(244,239,228,0.08); border-radius:16px; padding:20px; }
+  .tx-row { display:flex; align-items:center; padding:10px 0; border-bottom:1px solid rgba(244,239,228,0.06); }
+  .tx-row:last-child { border-bottom:none; }
+
+  .field-label { display:block; font-size:12px; color:${COLORS.slate}; margin: 14px 0 6px; }
+  .field-select, .field-input { width:100%; background:${COLORS.ink3}; border:1px solid rgba(244,239,228,0.12); color:${COLORS.bone}; border-radius:10px; padding:10px 12px; font-size:14px; font-family:'Inter',sans-serif; outline:none; }
+  .field-select:focus, .field-input:focus { border-color:${COLORS.gold}; }
+  .amount-input-wrap { display:flex; align-items:center; gap:8px; background:${COLORS.ink3}; border:1px solid rgba(244,239,228,0.12); border-radius:10px; padding:10px 12px; }
+  .amount-input { background:transparent; border:none; padding:0; font-family:'IBM Plex Mono',monospace; font-size:16px; }
+  .amount-input:focus { outline:none; }
+
+  .btn-primary { display:flex; align-items:center; justify-content:center; gap:8px; background:${COLORS.gold}; color:${COLORS.ink}; border:none; border-radius:10px; padding:12px; font-weight:600; font-size:14px; cursor:pointer; width:100%; }
+  .btn-primary:hover { background: #dcac5c; }
+  .btn-primary:disabled { opacity: 0.6; cursor: default; }
+  .btn-chip { display:flex; align-items:center; gap:6px; background:rgba(244,239,228,0.06); border:1px solid rgba(244,239,228,0.14); color:${COLORS.bone}; border-radius:99px; padding:7px 13px; font-size:12px; cursor:pointer; white-space:nowrap; }
+  .btn-chip:hover { border-color: ${COLORS.gold}; color:${COLORS.gold}; }
+  .btn-chip-done { display:flex; align-items:center; gap:5px; color:${COLORS.pos}; font-size:12px; padding:7px 6px; }
+
+  .budget-track { height:7px; border-radius:99px; background:rgba(244,239,228,0.08); overflow:hidden; }
+  .budget-fill { height:100%; border-radius:99px; transition: width .5s ease; }
+
+  .card-visual { border-radius:16px; padding:20px; border:1px solid rgba(244,239,228,0.10); position:relative; overflow:hidden; }
+  .frozen-badge { display:flex; align-items:center; gap:4px; font-size:11px; color:${COLORS.azure}; background:rgba(108,143,168,0.15); padding:4px 8px; border-radius:99px; }
+
+  .search-wrap { display:flex; align-items:center; gap:8px; background:${COLORS.ink3}; border:1px solid rgba(244,239,228,0.12); border-radius:10px; padding:9px 12px; }
+  .search-input { background:transparent; border:none; outline:none; color:${COLORS.bone}; font-size:14px; width:100%; }
+
+  .bottom-nav { position:fixed; bottom:0; left:0; right:0; background:${COLORS.ink2}; border-top:1px solid rgba(244,239,228,0.08); display:flex; justify-content:space-around; padding: 8px 4px 10px; z-index:40; }
+  .bottom-nav-item { display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10px; color:${COLORS.slate}; background:none; border:none; cursor:pointer; padding:4px 10px; }
+  .bottom-nav-item.active { color: ${COLORS.gold}; }
+
+  .sidebar { position:fixed; top:0; left:0; bottom:0; width:220px; background:${COLORS.ink2}; border-right:1px solid rgba(244,239,228,0.08); padding:26px 16px; }
+  .side-item { display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:10px; color:${COLORS.slate}; cursor:pointer; font-size:14px; margin-bottom:4px; }
+  .side-item.active { background: rgba(201,154,74,0.12); color:${COLORS.gold}; }
+  .side-item:hover { color: ${COLORS.bone}; }
+
+  .toast { position:fixed; top:20px; right:20px; background:${COLORS.ink3}; border:1px solid rgba(201,154,74,0.4); color:${COLORS.bone}; padding:12px 18px; border-radius:12px; font-size:13px; display:flex; align-items:center; gap:8px; z-index:60; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+
+  @media (min-width: 768px) {
+    .shell { padding: 30px 32px 40px 252px; }
+  }
+`;
 
 function useCountUp(target, duration = 700) {
   const [value, setValue] = useState(target);
@@ -401,7 +480,7 @@ function InsightsPanel({ transactions }) {
   );
 }
 
-function CardVisual({ account, card, onToggleFreeze, onLimitChange, onReveal, revealed }) {
+function CardVisual({ account, card, cardholderName, onToggleFreeze, onLimitChange, onReveal, revealed }) {
   const isCredit = account.type === "credit";
   return (
     <div className="panel">
@@ -424,7 +503,7 @@ function CardVisual({ account, card, onToggleFreeze, onLimitChange, onReveal, re
         <div className="flex justify-between items-end mt-6">
           <div>
             <div className="text-xs font-body" style={{ color: COLORS.boneDim }}>{isCredit ? "Credit Card" : "Debit Card"}</div>
-            <div className="font-body text-sm" style={{ color: COLORS.bone }}>Alex Rivera</div>
+            <div className="font-body text-sm" style={{ color: COLORS.bone }}>{cardholderName}</div>
           </div>
           <div className="font-mono text-xs" style={{ color: COLORS.boneDim }}>{revealed ? "07/29" : "••/••"}</div>
         </div>
@@ -490,7 +569,64 @@ function HistoryPanel({ transactions, accounts }) {
   );
 }
 
-export default function BankingApp() {
+function LoginScreen({ onLogin }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSubmitting(true);
+    try {
+      const { token, user } = await api.login(email, password);
+      api.saveSession(token, user);
+      onLogin(user);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: 20 }}>
+      <form onSubmit={submit} className="panel" style={{ width: "100%", maxWidth: 380 }}>
+        <div className="brand mb-1" style={{ color: COLORS.gold }}>Sable</div>
+        <div className="eyebrow mb-6">Sign in to your account</div>
+
+        <label className="field-label">Email</label>
+        <input
+          className="field-input"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+          autoComplete="username"
+        />
+
+        <label className="field-label">Password</label>
+        <input
+          className="field-input"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="••••••••"
+          autoComplete="current-password"
+        />
+
+        {error && <div className="text-sm mt-3" style={{ color: COLORS.neg }}>{error}</div>}
+
+        <button type="submit" className="btn-primary mt-6" disabled={submitting}>
+          {submitting ? "Signing in…" : "Sign in"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function Dashboard({ user, onLogout }) {
   const [accounts, setAccounts] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [bills, setBills] = useState([]);
@@ -574,7 +710,7 @@ export default function BankingApp() {
 
   if (loading) {
     return (
-      <div className="app-root font-body" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
         <div className="eyebrow">Loading your accounts…</div>
       </div>
     );
@@ -582,7 +718,7 @@ export default function BankingApp() {
 
   if (loadError) {
     return (
-      <div className="app-root font-body" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: 20 }}>
         <div className="panel" style={{ maxWidth: 420 }}>
           <div className="eyebrow mb-2" style={{ color: COLORS.neg }}>Couldn't load the app</div>
           <div className="text-sm font-body" style={{ color: COLORS.bone }}>{loadError}</div>
@@ -595,86 +731,7 @@ export default function BankingApp() {
   }
 
   return (
-    <div className="app-root font-body">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500..700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
-
-        .app-root { background: ${COLORS.ink}; color: ${COLORS.bone}; min-height: 100%; }
-        .font-display { font-family: 'Fraunces', serif; }
-        .font-body { font-family: 'Inter', sans-serif; }
-        .font-mono { font-family: 'IBM Plex Mono', monospace; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        .eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: ${COLORS.gold}; }
-
-        .shell { max-width: 1100px; margin: 0 auto; padding: 20px 16px 100px; }
-        .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom: 22px; }
-        .brand { font-family:'Fraunces',serif; font-size:22px; color:${COLORS.bone}; letter-spacing:0.5px; }
-        .icon-btn { width:38px; height:38px; border-radius:11px; background:${COLORS.ink2}; display:flex; align-items:center; justify-content:center; border:1px solid rgba(244,239,228,0.08); color:${COLORS.boneDim}; cursor:pointer; }
-        .icon-btn:hover { border-color: rgba(201,154,74,0.5); color:${COLORS.gold}; }
-
-        .ledger-hero { position:relative; padding: 22px 20px 20px; border-radius: 18px; background: linear-gradient(145deg, ${COLORS.ink2}, ${COLORS.ink3}); border:1px solid rgba(244,239,228,0.08); margin-bottom: 20px; }
-        .ledger-hero::before { content:''; position:absolute; top:0; left:16px; right:16px; height:6px; background-image: radial-gradient(circle at 6px 0px, ${COLORS.ink} 4px, transparent 4.2px); background-size:16px 6px; background-repeat:repeat-x; }
-        .ledger-amount-lg { font-size: 38px; font-weight:600; }
-        .ledger-amount-md { font-size: 22px; font-weight:600; }
-        .ledger-amount-sm { font-size: 15px; font-weight:600; }
-
-        .accounts-row { display:flex; gap:12px; overflow-x:auto; padding-bottom:4px; }
-        .account-card { min-width: 210px; text-align:left; background:${COLORS.ink2}; border-radius:16px; padding:18px; border:1.5px solid rgba(244,239,228,0.10); cursor:pointer; transition: border-color .2s ease, transform .2s ease; flex-shrink:0; }
-        .account-card:hover { transform: translateY(-2px); }
-
-        .stamp-icon { width:34px; height:34px; border-radius:10px; background:rgba(244,239,228,0.06); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-        .cat-stamp { border-radius: 50%; border: 1.5px dashed currentColor; display:flex; align-items:center; justify-content:center; transform: rotate(-4deg); flex-shrink:0; background: rgba(244,239,228,0.03); }
-
-        .quick-actions { display:flex; gap:10px; margin: 18px 0 26px; flex-wrap:wrap; }
-        .quick-action { display:flex; flex-direction:column; align-items:center; gap:6px; background:${COLORS.ink2}; border:1px solid rgba(244,239,228,0.08); border-radius:14px; padding:12px 18px; cursor:pointer; color:${COLORS.bone}; font-size:12px; }
-        .quick-action:hover { border-color: rgba(201,154,74,0.5); }
-        .quick-action svg { color: ${COLORS.gold}; }
-
-        .panel { background:${COLORS.ink2}; border:1px solid rgba(244,239,228,0.08); border-radius:16px; padding:20px; }
-        .tx-row { display:flex; align-items:center; padding:10px 0; border-bottom:1px solid rgba(244,239,228,0.06); }
-        .tx-row:last-child { border-bottom:none; }
-
-        .field-label { display:block; font-size:12px; color:${COLORS.slate}; margin: 14px 0 6px; }
-        .field-select, .field-input { width:100%; background:${COLORS.ink3}; border:1px solid rgba(244,239,228,0.12); color:${COLORS.bone}; border-radius:10px; padding:10px 12px; font-size:14px; font-family:'Inter',sans-serif; outline:none; }
-        .field-select:focus, .field-input:focus { border-color:${COLORS.gold}; }
-        .amount-input-wrap { display:flex; align-items:center; gap:8px; background:${COLORS.ink3}; border:1px solid rgba(244,239,228,0.12); border-radius:10px; padding:10px 12px; }
-        .amount-input { background:transparent; border:none; padding:0; font-family:'IBM Plex Mono',monospace; font-size:16px; }
-        .amount-input:focus { outline:none; }
-
-        .btn-primary { display:flex; align-items:center; justify-content:center; gap:8px; background:${COLORS.gold}; color:${COLORS.ink}; border:none; border-radius:10px; padding:12px; font-weight:600; font-size:14px; cursor:pointer; width:100%; }
-        .btn-primary:hover { background: #dcac5c; }
-        .btn-primary:disabled { opacity: 0.6; cursor: default; }
-        .btn-chip { display:flex; align-items:center; gap:6px; background:rgba(244,239,228,0.06); border:1px solid rgba(244,239,228,0.14); color:${COLORS.bone}; border-radius:99px; padding:7px 13px; font-size:12px; cursor:pointer; white-space:nowrap; }
-        .btn-chip:hover { border-color: ${COLORS.gold}; color:${COLORS.gold}; }
-        .btn-chip-done { display:flex; align-items:center; gap:5px; color:${COLORS.pos}; font-size:12px; padding:7px 6px; }
-
-        .budget-track { height:7px; border-radius:99px; background:rgba(244,239,228,0.08); overflow:hidden; }
-        .budget-fill { height:100%; border-radius:99px; transition: width .5s ease; }
-
-        .card-visual { border-radius:16px; padding:20px; border:1px solid rgba(244,239,228,0.10); position:relative; overflow:hidden; }
-        .frozen-badge { display:flex; align-items:center; gap:4px; font-size:11px; color:${COLORS.azure}; background:rgba(108,143,168,0.15); padding:4px 8px; border-radius:99px; }
-
-        .search-wrap { display:flex; align-items:center; gap:8px; background:${COLORS.ink3}; border:1px solid rgba(244,239,228,0.12); border-radius:10px; padding:9px 12px; }
-        .search-input { background:transparent; border:none; outline:none; color:${COLORS.bone}; font-size:14px; width:100%; }
-
-        .bottom-nav { position:fixed; bottom:0; left:0; right:0; background:${COLORS.ink2}; border-top:1px solid rgba(244,239,228,0.08); display:flex; justify-content:space-around; padding: 8px 4px 10px; z-index:40; }
-        .bottom-nav-item { display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10px; color:${COLORS.slate}; background:none; border:none; cursor:pointer; padding:4px 10px; }
-        .bottom-nav-item.active { color: ${COLORS.gold}; }
-
-        .sidebar { position:fixed; top:0; left:0; bottom:0; width:220px; background:${COLORS.ink2}; border-right:1px solid rgba(244,239,228,0.08); padding:26px 16px; }
-        .side-item { display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:10px; color:${COLORS.slate}; cursor:pointer; font-size:14px; margin-bottom:4px; }
-        .side-item.active { background: rgba(201,154,74,0.12); color:${COLORS.gold}; }
-        .side-item:hover { color: ${COLORS.bone}; }
-
-        .toast { position:fixed; top:20px; right:20px; background:${COLORS.ink3}; border:1px solid rgba(201,154,74,0.4); color:${COLORS.bone}; padding:12px 18px; border-radius:12px; font-size:13px; display:flex; align-items:center; gap:8px; z-index:60; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
-
-        @media (min-width: 768px) {
-          .shell { padding: 30px 32px 40px 252px; }
-        }
-      `}</style>
-
+    <>
       <div className="sidebar hidden md:block">
         <div className="brand mb-8" style={{ color: COLORS.gold }}>Sable</div>
         {NAV_ITEMS.map((item) => (
@@ -688,11 +745,12 @@ export default function BankingApp() {
         <div className="topbar">
           <div>
             <div className="eyebrow">Good to see you</div>
-            <div className="brand">Alex Rivera</div>
+            <div className="brand">{user.name}</div>
           </div>
           <div className="flex gap-2">
             <div className="icon-btn"><Bell size={17} /></div>
             <div className="icon-btn"><SettingsIcon size={17} /></div>
+            <div className="icon-btn" onClick={onLogout} title="Log out"><LogOut size={17} /></div>
           </div>
         </div>
 
@@ -761,6 +819,7 @@ export default function BankingApp() {
                   key={a.id}
                   account={a}
                   card={cards[a.id] || { frozen: false, limit: null }}
+                  cardholderName={user.name}
                   revealed={!!revealed[a.id]}
                   onReveal={() => setRevealed((p) => ({ ...p, [a.id]: !p[a.id] }))}
                   onToggleFreeze={() => handleToggleFreeze(a.id)}
@@ -793,6 +852,28 @@ export default function BankingApp() {
           <Check size={15} style={{ color: COLORS.pos }} /> {toast}
         </div>
       )}
+    </>
+  );
+}
+
+export default function BankingApp() {
+  const [user, setUser] = useState(() => api.getStoredUser());
+
+  useEffect(() => {
+    const handleUnauthorized = () => setUser(null);
+    window.addEventListener("sable:unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("sable:unauthorized", handleUnauthorized);
+  }, []);
+
+  const handleLogout = () => {
+    api.logout();
+    setUser(null);
+  };
+
+  return (
+    <div className="app-root font-body">
+      <style>{GLOBAL_CSS}</style>
+      {user ? <Dashboard user={user} onLogout={handleLogout} /> : <LoginScreen onLogin={setUser} />}
     </div>
   );
 }

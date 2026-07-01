@@ -1,16 +1,52 @@
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
-async function request(path, options) {
+const TOKEN_KEY = "sable_token";
+const USER_KEY = "sable_user";
+
+function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+function getStoredUser() {
+  const raw = localStorage.getItem(USER_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+
+function clearSession() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+}
+
+async function request(path, options = {}) {
+  const token = getToken();
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     ...options,
   });
+
+  if (res.status === 401) {
+    clearSession();
+    window.dispatchEvent(new Event("sable:unauthorized"));
+  }
+
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Request failed.");
   return data;
 }
 
 export const api = {
+  login: (email, password) =>
+    request("/api/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
+  saveSession: (token, user) => {
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  },
+  logout: clearSession,
+  getStoredUser,
+
   getAccounts: () => request("/api/accounts"),
   getTransactions: () => request("/api/transactions"),
   getBills: () => request("/api/bills"),

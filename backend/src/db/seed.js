@@ -1,13 +1,23 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import bcrypt from "bcryptjs";
 import { pool } from "./pool.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const DEMO_EMAIL = "alex@sable.bank";
+const DEMO_PASSWORD = "sable-demo";
+
 async function seed() {
   const schema = fs.readFileSync(path.join(__dirname, "schema.sql"), "utf8");
   await pool.query(schema);
+
+  const passwordHash = bcrypt.hashSync(DEMO_PASSWORD, 10);
+  await pool.query(
+    `INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3)`,
+    [DEMO_EMAIL, passwordHash, "Alex Rivera"]
+  );
 
   await pool.query(`
     INSERT INTO accounts (id, name, type, last4, balance, apy, credit_limit) VALUES
@@ -50,6 +60,7 @@ async function seed() {
   `);
 
   console.log("Seed complete.");
+  console.log(`Demo login: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
   await pool.end();
 }
 
