@@ -40,6 +40,8 @@ async function request(path, options = {}) {
 export const api = {
   login: (email, password) =>
     request("/api/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
+  register: (name, email, password) =>
+    request("/api/auth/register", { method: "POST", body: JSON.stringify({ name, email, password }) }),
   saveSession: (token, user) => {
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
@@ -57,4 +59,10 @@ export const api = {
   payBill: (id) => request(`/api/bills/${id}/pay`, { method: "POST" }),
   patchCard: (accountId, payload) =>
     request(`/api/cards/${accountId}`, { method: "PATCH", body: JSON.stringify(payload) }),
+
+  admin: {
+    listUsers: () => request("/api/admin/users"),
+    approveUser: (id) => request(`/api/admin/users/${id}/approve`, { method: "POST" }),
+    rejectUser: (id) => request(`/api/admin/users/${id}/reject`, { method: "POST" }),
+  },
 };

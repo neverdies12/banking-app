@@ -3,7 +3,7 @@ import {
   Home, Send, Receipt, PieChart as PieIcon, CreditCard, History as HistoryIcon,
   Bell, Settings as SettingsIcon, Snowflake, Eye, EyeOff, Search,
   ArrowDownLeft, ShoppingCart, Utensils, Car, ShoppingBag, Film,
-  ChevronRight, Check, ArrowLeftRight, Wallet, PiggyBank, LogOut
+  ChevronRight, Check, ArrowLeftRight, Wallet, PiggyBank, LogOut, ShieldCheck, X
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip
@@ -56,7 +56,7 @@ const trendData = [
   { month: "Jun", net: 21986 },
 ];
 
-const NAV_ITEMS = [
+const BASE_NAV_ITEMS = [
   { id: "home", label: "Home", icon: Home },
   { id: "transfer", label: "Transfer", icon: Send },
   { id: "insights", label: "Insights", icon: PieIcon },
@@ -569,7 +569,7 @@ function HistoryPanel({ transactions, accounts }) {
   );
 }
 
-function LoginScreen({ onLogin }) {
+function LoginScreen({ onLogin, onSwitchToRegister }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -621,7 +621,206 @@ function LoginScreen({ onLogin }) {
         <button type="submit" className="btn-primary mt-6" disabled={submitting}>
           {submitting ? "Signing in…" : "Sign in"}
         </button>
+
+        <div className="text-sm font-body mt-4" style={{ color: COLORS.slate, textAlign: "center" }}>
+          Don't have an account?{" "}
+          <span
+            style={{ color: COLORS.gold, cursor: "pointer" }}
+            onClick={onSwitchToRegister}
+          >
+            Register
+          </span>
+        </div>
       </form>
+    </div>
+  );
+}
+
+function RegisterScreen({ onSwitchToLogin }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSubmitting(true);
+    try {
+      const result = await api.register(name, email, password);
+      setMessage(result.message);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (message) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: 20 }}>
+        <div className="panel" style={{ width: "100%", maxWidth: 380 }}>
+          <div className="brand mb-1" style={{ color: COLORS.gold }}>Sable</div>
+          <div className="eyebrow mb-6">Registration received</div>
+          <div className="text-sm font-body" style={{ color: COLORS.bone }}>{message}</div>
+          <button type="button" className="btn-primary mt-6" onClick={onSwitchToLogin}>
+            Back to sign in
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: 20 }}>
+      <form onSubmit={submit} className="panel" style={{ width: "100%", maxWidth: 380 }}>
+        <div className="brand mb-1" style={{ color: COLORS.gold }}>Sable</div>
+        <div className="eyebrow mb-6">Create an account</div>
+
+        <label className="field-label">Full name</label>
+        <input
+          className="field-input"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Jordan Reyes"
+          autoComplete="name"
+        />
+
+        <label className="field-label">Email</label>
+        <input
+          className="field-input"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+          autoComplete="username"
+        />
+
+        <label className="field-label">Password</label>
+        <input
+          className="field-input"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="At least 8 characters"
+          autoComplete="new-password"
+        />
+
+        {error && <div className="text-sm mt-3" style={{ color: COLORS.neg }}>{error}</div>}
+
+        <button type="submit" className="btn-primary mt-6" disabled={submitting}>
+          {submitting ? "Submitting…" : "Register"}
+        </button>
+
+        <div className="text-sm font-body mt-4" style={{ color: COLORS.slate, textAlign: "center" }}>
+          Already have an account?{" "}
+          <span
+            style={{ color: COLORS.gold, cursor: "pointer" }}
+            onClick={onSwitchToLogin}
+          >
+            Sign in
+          </span>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function AdminPanel({ showToast }) {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const load = async () => {
+    try {
+      const data = await api.admin.listUsers();
+      setUsers(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const handleApprove = async (id) => {
+    try {
+      await api.admin.approveUser(id);
+      await load();
+      showToast("User approved");
+    } catch (err) {
+      showToast(err.message);
+    }
+  };
+
+  const handleReject = async (id) => {
+    try {
+      await api.admin.rejectUser(id);
+      await load();
+      showToast("User rejected");
+    } catch (err) {
+      showToast(err.message);
+    }
+  };
+
+  const statusColor = (status) =>
+    status === "approved" ? COLORS.pos : status === "rejected" ? COLORS.neg : COLORS.gold;
+
+  if (loading) {
+    return (
+      <div className="panel">
+        <div className="text-sm font-body" style={{ color: COLORS.slate }}>Loading users…</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="panel">
+        <div className="text-sm font-body" style={{ color: COLORS.neg }}>{error}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="panel">
+      <div className="eyebrow mb-4">All users</div>
+      {users.length === 0 && (
+        <div className="text-sm font-body" style={{ color: COLORS.slate }}>No users yet.</div>
+      )}
+      <div className="flex flex-col gap-1">
+        {users.map((u) => (
+          <div key={u.id} className="tx-row">
+            <div className="stamp-icon" style={{ color: COLORS.gold }}><ShieldCheck size={18} /></div>
+            <div className="flex-1 min-w-0 ml-3">
+              <div className="font-body text-sm" style={{ color: COLORS.bone }}>
+                {u.name}
+                {u.role === "admin" && (
+                  <span className="font-mono text-xs ml-2" style={{ color: COLORS.gold }}>admin</span>
+                )}
+              </div>
+              <div className="font-body text-xs" style={{ color: COLORS.slate }}>
+                {u.email} · <span style={{ color: statusColor(u.status) }}>{u.status}</span>
+              </div>
+            </div>
+            {u.status === "pending" && (
+              <div className="flex gap-2">
+                <button className="btn-chip" onClick={() => handleApprove(u.id)}>
+                  <Check size={13} /> Approve
+                </button>
+                <button className="btn-chip" onClick={() => handleReject(u.id)}>
+                  <X size={13} /> Reject
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -639,6 +838,11 @@ function Dashboard({ user, onLogout }) {
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [toast, setToast] = useState(null);
   const [revealed, setRevealed] = useState({});
+
+  const navItems =
+    user.role === "admin"
+      ? [...BASE_NAV_ITEMS, { id: "admin", label: "Admin", icon: ShieldCheck }]
+      : BASE_NAV_ITEMS;
 
   const loadAll = useCallback(async () => {
     const [accountsData, transactionsData, billsData, transfersData, cardsData] = await Promise.all([
@@ -734,7 +938,7 @@ function Dashboard({ user, onLogout }) {
     <>
       <div className="sidebar hidden md:block">
         <div className="brand mb-8" style={{ color: COLORS.gold }}>Sable</div>
-        {NAV_ITEMS.map((item) => (
+        {navItems.map((item) => (
           <div key={item.id} className={`side-item ${activeTab === item.id ? "active" : ""}`} onClick={() => setActiveTab(item.id)}>
             <item.icon size={17} /> {item.label}
           </div>
@@ -836,10 +1040,17 @@ function Dashboard({ user, onLogout }) {
             <HistoryPanel transactions={transactions} accounts={accounts} />
           </>
         )}
+
+        {activeTab === "admin" && user.role === "admin" && (
+          <>
+            <SectionTitle eyebrow="Control" title="User administration" />
+            <AdminPanel showToast={showToast} />
+          </>
+        )}
       </div>
 
       <div className="bottom-nav flex md:hidden">
-        {NAV_ITEMS.map((item) => (
+        {navItems.map((item) => (
           <button key={item.id} className={`bottom-nav-item ${activeTab === item.id ? "active" : ""}`} onClick={() => setActiveTab(item.id)}>
             <item.icon size={19} />
             {item.label}
@@ -858,6 +1069,7 @@ function Dashboard({ user, onLogout }) {
 
 export default function BankingApp() {
   const [user, setUser] = useState(() => api.getStoredUser());
+  const [authView, setAuthView] = useState("login");
 
   useEffect(() => {
     const handleUnauthorized = () => setUser(null);
@@ -868,12 +1080,22 @@ export default function BankingApp() {
   const handleLogout = () => {
     api.logout();
     setUser(null);
+    setAuthView("login");
   };
+
+  let content;
+  if (user) {
+    content = <Dashboard user={user} onLogout={handleLogout} />;
+  } else if (authView === "register") {
+    content = <RegisterScreen onSwitchToLogin={() => setAuthView("login")} />;
+  } else {
+    content = <LoginScreen onLogin={setUser} onSwitchToRegister={() => setAuthView("register")} />;
+  }
 
   return (
     <div className="app-root font-body">
       <style>{GLOBAL_CSS}</style>
-      {user ? <Dashboard user={user} onLogout={handleLogout} /> : <LoginScreen onLogin={setUser} />}
+      {content}
     </div>
   );
 }

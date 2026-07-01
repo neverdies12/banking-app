@@ -4,7 +4,13 @@ import { pool } from "../db/pool.js";
 const router = Router();
 
 router.get("/", async (req, res) => {
-  const { rows } = await pool.query("SELECT account_id, frozen, spend_limit FROM cards");
+  const { rows } = await pool.query(
+    `SELECT c.account_id, c.frozen, c.spend_limit
+     FROM cards c
+     JOIN accounts a ON a.id = c.account_id
+     WHERE a.user_id = $1`,
+    [req.user.sub]
+  );
   const cards = {};
   for (const r of rows) {
     cards[r.account_id] = {
@@ -18,8 +24,14 @@ router.get("/", async (req, res) => {
 router.patch("/:accountId", async (req, res) => {
   const { accountId } = req.params;
   const { frozen, limit } = req.body;
+  const userId = req.user.sub;
 
-  const existing = await pool.query("SELECT account_id FROM cards WHERE account_id = $1", [accountId]);
+  const existing = await pool.query(
+    `SELECT c.account_id FROM cards c
+     JOIN accounts a ON a.id = c.account_id
+     WHERE c.account_id = $1 AND a.user_id = $2`,
+    [accountId, userId]
+  );
   if (existing.rows.length === 0) {
     return res.status(404).json({ error: "Card not found." });
   }

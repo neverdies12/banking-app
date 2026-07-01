@@ -2,8 +2,9 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 
-import { requireAuth } from "./middleware/auth.js";
+import { requireAuth, requireAdmin } from "./middleware/auth.js";
 import authRouter from "./routes/auth.js";
+import adminRouter from "./routes/admin.js";
 import accountsRouter from "./routes/accounts.js";
 import transactionsRouter from "./routes/transactions.js";
 import billsRouter from "./routes/bills.js";
@@ -20,6 +21,7 @@ app.get("/api/health", (req, res) => res.json({ ok: true }));
 app.use("/api/auth", authRouter);
 
 app.use("/api", requireAuth);
+app.use("/api/admin", requireAdmin, adminRouter);
 app.use("/api/accounts", accountsRouter);
 app.use("/api/transactions", transactionsRouter);
 app.use("/api/bills", billsRouter);

@@ -5,7 +5,8 @@ const router = Router();
 
 router.get("/", async (req, res) => {
   const { rows } = await pool.query(
-    "SELECT id, account_id, merchant, category, amount, occurred_at FROM transactions ORDER BY occurred_at DESC, id DESC"
+    "SELECT id, account_id, merchant, category, amount, occurred_at FROM transactions WHERE user_id = $1 ORDER BY occurred_at DESC, id DESC",
+    [req.user.sub]
   );
   res.json(
     rows.map((r) => ({

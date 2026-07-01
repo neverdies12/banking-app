@@ -5,7 +5,8 @@ const router = Router();
 
 router.get("/", async (req, res) => {
   const { rows } = await pool.query(
-    "SELECT id, from_account_id, to_account_id, payee, amount, note, created_at FROM transfers ORDER BY created_at DESC, id DESC"
+    "SELECT id, from_account_id, to_account_id, payee, amount, note, created_at FROM transfers WHERE user_id = $1 ORDER BY created_at DESC, id DESC",
+    [req.user.sub]
   );
   res.json(
     rows.map((r) => ({
@@ -21,6 +22,7 @@ router.get("/", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
+  const userId = req.user.sub;
   const { fromAccountId, toAccountId, payeeName, amount, note } = req.body;
   const amt = Number(amount);
 
@@ -39,8 +41,8 @@ router.post("/", async (req, res) => {
     await client.query("BEGIN");
 
     const fromResult = await client.query(
-      "SELECT id, type, balance FROM accounts WHERE id = $1 FOR UPDATE",
-      [fromAccountId]
+      "SELECT id, type, balance FROM accounts WHERE id = $1 AND user_id = $2 FOR UPDATE",
+      [fromAccountId, userId]
     );
     const fromAccount = fromResult.rows[0];
     if (!fromAccount) {
@@ -54,9 +56,10 @@ router.post("/", async (req, res) => {
 
     let payee = payeeName;
     if (toAccountId) {
-      const toResult = await client.query("SELECT id, name FROM accounts WHERE id = $1 FOR UPDATE", [
-        toAccountId,
-      ]);
+      const toResult = await client.query(
+        "SELECT id, name FROM accounts WHERE id = $1 AND user_id = $2 FOR UPDATE",
+        [toAccountId, userId]
+      );
       const toAccount = toResult.rows[0];
       if (!toAccount) {
         await client.query("ROLLBACK");
@@ -69,14 +72,14 @@ router.post("/", async (req, res) => {
     await client.query("UPDATE accounts SET balance = balance - $1 WHERE id = $2", [amt, fromAccountId]);
 
     await client.query(
-      "INSERT INTO transactions (account_id, merchant, category, amount) VALUES ($1, $2, 'Transfer', $3)",
-      [fromAccountId, `Transfer to ${payee}`, -amt]
+      "INSERT INTO transactions (user_id, account_id, merchant, category, amount) VALUES ($1, $2, $3, 'Transfer', $4)",
+      [userId, fromAccountId, `Transfer to ${payee}`, -amt]
     );
 
     const transferResult = await client.query(
-      `INSERT INTO transfers (from_account_id, to_account_id, payee, amount, note)
-       VALUES ($1, $2, $3, $4, $5) RETURNING id, created_at`,
-      [fromAccountId, toAccountId || null, payee, amt, note || null]
+      `INSERT INTO transfers (user_id, from_account_id, to_account_id, payee, amount, note)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, created_at`,
+      [userId, fromAccountId, toAccountId || null, payee, amt, note || null]
     );
 
     await client.query("COMMIT");

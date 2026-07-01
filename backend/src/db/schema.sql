@@ -9,11 +9,15 @@ CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
-  name TEXT NOT NULL
+  name TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE accounts (
-  id TEXT PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   type TEXT NOT NULL CHECK (type IN ('checking', 'savings', 'credit')),
   last4 TEXT NOT NULL,
@@ -23,14 +27,15 @@ CREATE TABLE accounts (
 );
 
 CREATE TABLE cards (
-  account_id TEXT PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
+  account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
   frozen BOOLEAN NOT NULL DEFAULT FALSE,
   spend_limit NUMERIC(12, 2)
 );
 
 CREATE TABLE transactions (
   id SERIAL PRIMARY KEY,
-  account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   merchant TEXT NOT NULL,
   category TEXT NOT NULL,
   amount NUMERIC(12, 2) NOT NULL,
@@ -38,17 +43,20 @@ CREATE TABLE transactions (
 );
 
 CREATE TABLE bills (
-  id TEXT PRIMARY KEY,
+  id TEXT NOT NULL,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   amount NUMERIC(12, 2) NOT NULL,
   due_date DATE NOT NULL,
-  status TEXT NOT NULL CHECK (status IN ('due', 'paid')) DEFAULT 'due'
+  status TEXT NOT NULL CHECK (status IN ('due', 'paid')) DEFAULT 'due',
+  PRIMARY KEY (user_id, id)
 );
 
 CREATE TABLE transfers (
   id SERIAL PRIMARY KEY,
-  from_account_id TEXT NOT NULL REFERENCES accounts(id),
-  to_account_id TEXT REFERENCES accounts(id),
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  from_account_id INTEGER NOT NULL REFERENCES accounts(id),
+  to_account_id INTEGER REFERENCES accounts(id),
   payee TEXT NOT NULL,
   amount NUMERIC(12, 2) NOT NULL,
   note TEXT,
