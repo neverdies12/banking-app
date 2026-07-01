@@ -53,7 +53,9 @@ git push -u origin main
 
 Note: Render's free tier spins down after inactivity — the first request after idling can take ~30s while it wakes up.
 
-**Demo login:** `alex@sable.bank` / `sable-demo` (created by the seed script). Change this before sharing the app publicly, since it's currently the only account and its password is in this repo's history.
+**Demo login:** `alex@sable.bank` / `sable-demo` (created by the seed script, seeded as an **admin**). Change this before sharing the app publicly, since its password is in this repo's history.
+
+**New users must be approved before they can log in.** Anyone can register via the login screen's "Register" link, but their account starts as `pending` and can't sign in until an admin approves it from the in-app Admin tab (visible only to `alex@sable.bank` by default). Approving a user auto-creates a Checking + Savings account for them with a $0 balance — there's no demo transaction history for anyone except the original seeded admin.
 
 ## 4. Frontend — Vercel
 
