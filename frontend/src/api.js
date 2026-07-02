@@ -64,5 +64,10 @@ export const api = {
     listUsers: () => request("/api/admin/users"),
     approveUser: (id) => request(`/api/admin/users/${id}/approve`, { method: "POST" }),
     rejectUser: (id) => request(`/api/admin/users/${id}/reject`, { method: "POST" }),
+    adjustAccount: (userId, accountId, direction, amount, note) =>
+      request(`/api/admin/users/${userId}/accounts/${accountId}/adjust`, {
+        method: "POST",
+        body: JSON.stringify({ direction, amount, note }),
+      }),
   },
 };

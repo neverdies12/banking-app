@@ -3,7 +3,7 @@ import {
   Home, Send, Receipt, PieChart as PieIcon, CreditCard, History as HistoryIcon,
   Bell, Settings as SettingsIcon, Snowflake, Eye, EyeOff, Search,
   ArrowDownLeft, ShoppingCart, Utensils, Car, ShoppingBag, Film,
-  ChevronRight, Check, ArrowLeftRight, Wallet, PiggyBank, LogOut, ShieldCheck, X
+  ChevronRight, Check, ArrowLeftRight, Wallet, PiggyBank, LogOut, ShieldCheck, X, Landmark
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip
@@ -34,6 +34,7 @@ const CATEGORY_META = {
   Entertainment: { color: COLORS.azure, icon: Film },
   Income: { color: COLORS.pos, icon: ArrowDownLeft },
   Transfer: { color: COLORS.boneDim, icon: ArrowLeftRight },
+  Adjustment: { color: COLORS.azure, icon: Landmark },
 };
 
 // Kept local: the backend models accounts/transactions/bills/transfers/cards,
@@ -728,6 +729,58 @@ function RegisterScreen({ onSwitchToLogin }) {
   );
 }
 
+function AdminAccountRow({ userId, account, onAdjusted, showToast }) {
+  const [amount, setAmount] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const adjust = async (direction) => {
+    const amt = parseFloat(amount);
+    if (!amt || amt <= 0) {
+      showToast("Enter an amount greater than $0.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await api.admin.adjustAccount(userId, account.id, direction, amt);
+      setAmount("");
+      await onAdjusted();
+      showToast(
+        `${direction === "credit" ? "Credited" : "Debited"} ${fmt(amt)} ${
+          direction === "credit" ? "to" : "from"
+        } ${account.name}`
+      );
+    } catch (err) {
+      showToast(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="font-body text-xs flex-1 min-w-0 truncate" style={{ color: COLORS.boneDim }}>
+        {account.name} · <span className="font-mono">{fmt(account.balance)}</span>
+      </span>
+      <div className="amount-input-wrap" style={{ width: 130, flexShrink: 0 }}>
+        <span className="font-mono" style={{ color: COLORS.slate }}>$</span>
+        <input
+          className="field-input amount-input"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="0.00"
+          inputMode="decimal"
+        />
+      </div>
+      <button className="btn-chip" disabled={submitting} onClick={() => adjust("credit")}>
+        Credit
+      </button>
+      <button className="btn-chip" disabled={submitting} onClick={() => adjust("debit")}>
+        Debit
+      </button>
+    </div>
+  );
+}
+
 function AdminPanel({ showToast }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -793,29 +846,45 @@ function AdminPanel({ showToast }) {
       {users.length === 0 && (
         <div className="text-sm font-body" style={{ color: COLORS.slate }}>No users yet.</div>
       )}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-3">
         {users.map((u) => (
-          <div key={u.id} className="tx-row">
-            <div className="stamp-icon" style={{ color: COLORS.gold }}><ShieldCheck size={18} /></div>
-            <div className="flex-1 min-w-0 ml-3">
-              <div className="font-body text-sm" style={{ color: COLORS.bone }}>
-                {u.name}
-                {u.role === "admin" && (
-                  <span className="font-mono text-xs ml-2" style={{ color: COLORS.gold }}>admin</span>
-                )}
+          <div key={u.id} className="pb-3" style={{ borderBottom: "1px solid rgba(244,239,228,0.06)" }}>
+            <div className="flex items-center">
+              <div className="stamp-icon" style={{ color: COLORS.gold }}><ShieldCheck size={18} /></div>
+              <div className="flex-1 min-w-0 ml-3">
+                <div className="font-body text-sm" style={{ color: COLORS.bone }}>
+                  {u.name}
+                  {u.role === "admin" && (
+                    <span className="font-mono text-xs ml-2" style={{ color: COLORS.gold }}>admin</span>
+                  )}
+                </div>
+                <div className="font-body text-xs" style={{ color: COLORS.slate }}>
+                  {u.email} · <span style={{ color: statusColor(u.status) }}>{u.status}</span>
+                </div>
               </div>
-              <div className="font-body text-xs" style={{ color: COLORS.slate }}>
-                {u.email} · <span style={{ color: statusColor(u.status) }}>{u.status}</span>
-              </div>
+              {u.status === "pending" && (
+                <div className="flex gap-2">
+                  <button className="btn-chip" onClick={() => handleApprove(u.id)}>
+                    <Check size={13} /> Approve
+                  </button>
+                  <button className="btn-chip" onClick={() => handleReject(u.id)}>
+                    <X size={13} /> Reject
+                  </button>
+                </div>
+              )}
             </div>
-            {u.status === "pending" && (
-              <div className="flex gap-2">
-                <button className="btn-chip" onClick={() => handleApprove(u.id)}>
-                  <Check size={13} /> Approve
-                </button>
-                <button className="btn-chip" onClick={() => handleReject(u.id)}>
-                  <X size={13} /> Reject
-                </button>
+
+            {u.accounts.length > 0 && (
+              <div className="flex flex-col gap-2 mt-3" style={{ marginLeft: 46 }}>
+                {u.accounts.map((a) => (
+                  <AdminAccountRow
+                    key={a.id}
+                    userId={u.id}
+                    account={a}
+                    onAdjusted={load}
+                    showToast={showToast}
+                  />
+                ))}
               </div>
             )}
           </div>

@@ -4,17 +4,32 @@ import { pool } from "../db/pool.js";
 const router = Router();
 
 router.get("/users", async (req, res) => {
-  const { rows } = await pool.query(
+  const { rows: userRows } = await pool.query(
     "SELECT id, name, email, role, status, created_at FROM users ORDER BY created_at DESC"
   );
+  const { rows: accountRows } = await pool.query(
+    "SELECT id, user_id, name, type, balance FROM accounts ORDER BY id"
+  );
+
+  const accountsByUser = {};
+  for (const a of accountRows) {
+    (accountsByUser[a.user_id] ||= []).push({
+      id: a.id,
+      name: a.name,
+      type: a.type,
+      balance: Number(a.balance),
+    });
+  }
+
   res.json(
-    rows.map((r) => ({
+    userRows.map((r) => ({
       id: r.id,
       name: r.name,
       email: r.email,
       role: r.role,
       status: r.status,
       createdAt: r.created_at,
+      accounts: accountsByUser[r.id] || [],
     }))
   );
 });
@@ -61,6 +76,57 @@ router.post("/users/:id/approve", async (req, res) => {
 
     await client.query("COMMIT");
     res.json({ id: userId, status: "approved" });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+});
+
+router.post("/users/:userId/accounts/:accountId/adjust", async (req, res) => {
+  const userId = Number(req.params.userId);
+  const accountId = Number(req.params.accountId);
+  const { direction, amount, note } = req.body;
+  const amt = Number(amount);
+
+  if (!["credit", "debit"].includes(direction)) {
+    return res.status(400).json({ error: "Direction must be 'credit' or 'debit'." });
+  }
+  if (!amt || amt <= 0) {
+    return res.status(400).json({ error: "Enter an amount greater than $0." });
+  }
+
+  const signedAmount = direction === "credit" ? amt : -amt;
+  const merchant = note?.trim() || (direction === "credit" ? "Admin credit" : "Admin debit");
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const accountResult = await client.query(
+      "SELECT id, name FROM accounts WHERE id = $1 AND user_id = $2 FOR UPDATE",
+      [accountId, userId]
+    );
+    if (accountResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Account not found for this user." });
+    }
+
+    const updated = await client.query(
+      "UPDATE accounts SET balance = balance + $1 WHERE id = $2 RETURNING balance",
+      [signedAmount, accountId]
+    );
+    await client.query(
+      "INSERT INTO transactions (user_id, account_id, merchant, category, amount) VALUES ($1, $2, $3, 'Adjustment', $4)",
+      [userId, accountId, merchant, signedAmount]
+    );
+
+    await client.query("COMMIT");
+    res.json({
+      accountId,
+      balance: Number(updated.rows[0].balance),
+    });
   } catch (err) {
     await client.query("ROLLBACK");
     throw err;
